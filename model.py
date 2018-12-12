@@ -46,8 +46,8 @@ system = ecosystem.ecosystem(   order=order,  \
                                 reproduction_rate=reproduction_rate, \
                             )
 
-for i in range( 200 ):
-    print( '####', i ,'####' )
+for i in range( 101 ):
+    print( '-----------', 'frame', i ,'-----------' )
 
     # Peoriodically add food to the system
     if i % 1 == 0:

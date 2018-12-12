@@ -75,18 +75,19 @@ class ecosystem:
         '''
         Iteration function
         '''
+        # Calculate total food in the system
         self.__total_food = 0
         for i in range(self.__space_order):
             for j in range(self.__space_order):
                 self.__space[i][j].init()
                 self.__total_food += self.__space[i][j].food()
-
         for bug in self.__bugs:
             self.__total_food += bug.hunger()
-            
+
         # Reproduce, starve, die
         for bug in self.__bugs:
             if not bug.death():
+                # Reproduce
                 if bug.age() % self.__reproduction_rate == 0 and not bug.age() == 0 and bug.hunger() >= self.__reproduction_threshold:
                     bug.reproduce( self.__reproduction_transfer )
                     self.add_bug( bug.pos(), self.__reproduction_transfer )
@@ -128,7 +129,7 @@ class ecosystem:
                 pos = bug.pos()
                 self.__space[ pos[0] ][ pos[1] ].add_occupation( 1 )
 
-        # Eat, aged, reproduce
+        # Eat
         for bug in self.__bugs:
             if not bug.death():
                 # Eat
