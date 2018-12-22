@@ -7,12 +7,13 @@ class ecosystem:
 
     def __init__( self, \
                   order,  \
-                  initial_hunger=100, \
+                  initial_no=[ 10, 1 ], \
+                  initial_hunger=[ 100, 200 ], \
+                  starving_rate=[ 1, 1 ], \
+                  reproduction_threshold=[ 50, 100 ], \
+                  reproduction_transfer=[ 20, 40 ], \
+                  reproduction_rate=[ 7, 20 ], \
                   initial_food_distribution = [[0,0,0]], \
-                  starving_rate=1, \
-                  reproduction_threshold=50, \
-                  reproduction_transfer=20, \
-                  reproduction_rate=7, \
                 ):
         '''
         input of initial_food_distribution is a list of 3-vector, with the first 2 elements the coordinates and the 3rd=amount of food.
@@ -20,16 +21,27 @@ class ecosystem:
 
         self.__space = [ [ None for _ in range(order) ] for _ in range(order) ]
 
-        self.__bugs = list()
+        self.__animals = list()
+
+        self.__preys = list()
+
+        self.__predators = list()
 
         self.__space_order = order
 
         self.__total_food = 0.
 
-        # Total no of bugs, dead inclusive
-        self.__bug_offspring = 0
+        # Total no of preys, dead inclusive
+        self.__animal_no = [ 0, 0 ]
 
-        self.add_bug( np.array([ int(order/2), int(order/2) ]), initial_hunger )
+        self.__initial_no = initial_no
+
+        # putting in prey and predator
+        for animal_type in range( 2 ):
+            for i in range( self.__initial_no[animal_type] ):
+                x = random.randint(0,order-1)
+                y = random.randint(0,order-1)
+                self.add_animal( animal_type, np.array([ x, y ]), initial_hunger[animal_type] )
 
         # parameters
         self.__starving_rate = starving_rate
@@ -52,18 +64,22 @@ class ecosystem:
         for i in range(self.__space_order):
             for j in range(self.__space_order):
                 self.__total_food += self.__space[i][j].food()
-        for bug in self.__bugs:
-            self.__total_food += bug.hunger()
+        for prey in self.__preys:
+            self.__total_food += prey.hunger()
 
         self.draw()
 
 
-    def add_bug( self, position, hunger=20 ):
+    def add_animal( self, animal_type, position, hunger=20 ):
         '''
-        add ONE bug to the ecosystem
+        add ONE prey to the ecosystem
         '''
-        self.__bugs.append( objects.bug( position, self.__bug_offspring, hunger ) )
-        self.__bug_offspring += 1
+        if animal_type == 0:
+            self.__preys.append( objects.prey( position, self.__animal_no[0], hunger ) )
+            self.__animal_no += np.array([ 1, 0 ])
+        if animal_type == 1:
+            self.__predators.append( objects.predator( position, self.__animal_no[1], hunger ) )
+            self.__animal_no += np.array([ 0, 1 ])
 
     def add_food( self, position, value ):
         '''
@@ -81,67 +97,103 @@ class ecosystem:
             for j in range(self.__space_order):
                 self.__space[i][j].init()
                 self.__total_food += self.__space[i][j].food()
-        for bug in self.__bugs:
-            self.__total_food += bug.hunger()
+        for prey in self.__preys:
+            self.__total_food += prey.hunger()
+        for predator in self.__predators:
+            self.__total_food += predator.hunger()
+
+        #
+        self.__animals = self.__preys + self.__predators
 
         # Reproduce, starve, die
-        for bug in self.__bugs:
-            if not bug.death():
+        for animal in self.__animals:
+            # record the type of this animal
+            animal_type = animal.animal_type()
+            if not animal.death():
                 # Reproduce
-                if bug.age() % self.__reproduction_rate == 0 and not bug.age() == 0 and bug.hunger() >= self.__reproduction_threshold:
-                    bug.reproduce( self.__reproduction_transfer )
-                    self.add_bug( bug.pos(), self.__reproduction_transfer )
+                if( animal.age() % self.__reproduction_rate[ animal_type ] == 0 and \
+                    not animal.age() == 0 and \
+                    animal.hunger() >= self.__reproduction_threshold[ animal_type ] ):
+                    animal.reproduce( self.__reproduction_transfer[ animal_type ] )
+                    self.add_animal( animal_type, animal.pos(), self.__reproduction_transfer[ animal_type ] )
 
                 # Starve
-                bug.starve( self.__starving_rate )
+                animal.starve( self.__starving_rate[ animal_type ] )
 
                 # Aged
-                bug.add_age( 1 )
+                animal.add_age( 1 )
 
                 # Die
-                if bug.hunger() <= 0 or bug.age() >= 100:
-                    bug.die()
+                if animal.hunger() <= 0 or animal.age() >= 100:
+                    animal.die()
 
+        # update animal list
+        self.__animals = self.__preys + self.__predators
 
-        # Move
-        for bug in self.__bugs:
-            if not bug.death():
+        # Movement
+        for animal in self.__animals:
+            # record the type of this animal
+            animal_type = animal.animal_type()
+            if not animal.death():
 
                 allow_movement = False
                 while not allow_movement:
                     direction = random.randint(1,4)
 
-                    if   direction == 1 and bug.pos()[0] < self.__space_order-1:
+                    if   direction == 1 and animal.pos()[0] < self.__space_order-1:
                         displacement = [ 1, 0 ]
                         allow_movement = True
-                    elif direction == 2 and bug.pos()[1] < self.__space_order-1:
+                    elif direction == 2 and animal.pos()[1] < self.__space_order-1:
                         displacement = [ 0, 1 ]
                         allow_movement = True
-                    elif direction == 3 and bug.pos()[0] > 0:
+                    elif direction == 3 and animal.pos()[0] > 0:
                         displacement = [ -1, 0 ]
                         allow_movement = True
-                    elif direction == 4 and bug.pos()[1] > 0:
+                    elif direction == 4 and animal.pos()[1] > 0:
                         displacement = [ 0, -1 ]
                         allow_movement = True
-                bug.set_pos( bug.pos()+np.array(displacement) )
+                animal.set_pos( animal.pos()+np.array(displacement) )
 
-                # Calculate the occupations of bugs for each square - bugs will share foods
-                pos = bug.pos()
-                self.__space[ pos[0] ][ pos[1] ].add_occupation( 1 )
+                # Calculate the occupancy of animals for each square - animals will share foods
+                pos = animal.pos()
+                self.__space[ pos[0] ][ pos[1] ].add_occupancy( animal_type, 1 )
+                # Calculate the food worth value for this position
+                self.__space[ pos[0] ][ pos[1] ].add_animal_food( animal_type, animal.hunger() )
 
         # Eat
-        for bug in self.__bugs:
-            if not bug.death():
-                # Eat
-                pos = bug.pos()
-                occupation = self.__space[pos[0]][pos[1]].occupation()
-                food = self.__space[pos[0]][pos[1]].food()
-                portion = food / occupation
-                bug.eat( portion )
-                self.__space[pos[0]][pos[1]].init_food()
+        for predator in self.__predators:
+            if not predator.death():
+                pos = predator.pos()
+                predator_occupancy = self.__space[pos[0]][pos[1]].occupancy()[1]
+                # the predator will consume next level animal
+                food = self.__space[ pos[0] ][ pos[1] ].animal_food()[ predator.animal_type()-1 ]
+                portion = food / predator_occupancy
+                predator.eat( portion )
+                self.__space[ pos[0] ][ pos[1] ].set_occupancy( predator.animal_type()-1, 0 )
+
+        for prey in self.__preys:
+            if not prey.death():
+                pos = prey.pos()
+                prey_occupancy = self.__space[pos[0]][pos[1]].occupancy()[0]
+                predator_occupancy = self.__space[pos[0]][pos[1]].occupancy()[1]
+                if predator_occupancy > 0:
+                    print( 'eaten' )
+                    self.__space[ pos[0] ][ pos[1] ].set_animal_food( prey.animal_type(), 0 )
+                    prey.die()
+                else:
+                    food = self.__space[pos[0]][pos[1]].food()
+                    portion = food / prey_occupancy
+                    prey.eat( portion )
+
+        # for i in range( self.__space_order ):
+        #     for j in range( self.__space_order ):
+        #         prey_occupancy = self.__space[i][j].occupancy()[0]
+        #         if not prey_occupancy == 0:
+        #             self.__space[i][j].set_food = 0
+
 
         self.draw()
-        time.sleep(.5)
+        # time.sleep(.5)
 
 
     def draw( self, ):
@@ -155,11 +207,11 @@ class ecosystem:
                 output[i] += ( self.__space[i][j].character().ljust(3) )
 
         # Print information
-        for bug in self.__bugs:
-            if bug.death():
-                print ( 'bug', bug.id(), 'dead', 'age', bug.age(), 'offsprings', bug.offsprings() )
+        for animal in self.__animals:
+            if animal.death():
+                print ( animal, 'dead', 'age', animal.age(), 'offspring', animal.offsprings() )
             else:
-                print ( 'bug', bug.id(), 'hunger:', "{0:.2f}".format(bug.hunger()), 'age', bug.age(), 'offsprings', bug.offsprings())
+                print ( animal, 'hunger:', "{0:.2f}".format(animal.hunger()), 'age', animal.age(), 'offspring', animal.offsprings())
 
         print( 'total food: ', self.__total_food )
 
