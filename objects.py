@@ -1,6 +1,6 @@
 import numpy as np
 
-class bug:
+class animal:
 
     def __init__( self, pos, id_no, hunger=20 ):
 
@@ -18,19 +18,8 @@ class bug:
 
         self.__death = False
 
-        self.__nonce = np.array([0])
-
-    def __repr__( self ):
-        return str(self.__id)
-
     def pos( self ):
         return self.__pos
-
-    def nonce( self ):
-        return self.__nonce
-
-    def add_nonce( self, value ):
-        self.__nonce += value
 
     def id( self ):
         return self.__id
@@ -65,8 +54,6 @@ class bug:
 
         self.__last_displacement = dis_type
 
-        self.__nonce += 1
-
         return self, self.__pos
 
     def set_pos( self, value ):
@@ -85,7 +72,21 @@ class bug:
         self.__offspring += 1
         return 0
 
+class prey(animal):
 
+    def __repr__( self ):
+        return 'prey' + str(self.id())
+
+    def animal_type( self ):
+        return 0
+
+class predator(animal):
+
+    def __repr__( self ):
+        return 'predator' + str(self.id())
+
+    def animal_type( self ):
+        return 1
 
 class space:
 
@@ -97,8 +98,13 @@ class space:
 
         self.__food = food
 
-        self.__occupation = int()
+        self.__prey = list()
 
+        self.__predator = list()
+
+        self.__animal_food = np.array([ 0, 0 ])
+
+        self.__occupancy = np.array([ 0, 0 ])
 
     def pos( self ):
         return self.__pos
@@ -112,32 +118,94 @@ class space:
     def add_food( self, value ):
         self.__food += value
 
-    def init_food( self ):
-        self.__food = 0
+    def set_food( self, value ):
+        self.__food = value
 
-    def occupation( self ):
-        return self.__occupation
+    def animal_food( self ):
+        '''
+        food worth value carried by animal
+        '''
+        return self.__animal_food
 
-    def add_occupation( self, value ):
-        self.__occupation += value
+    def add_animal_food( self, index, value ):
+        self.__animal_food[index] += value
+
+    def set_animal_food( self, index, value ):
+        self.__animal_food[index] = value
+
+    def prey( self ):
+        return self.__prey
+
+    def add_prey( self, prey ):
+        self.__prey.append( prey )
+
+    def predator( self ):
+        return self.__predator
+
+    def add_predator( self, predator ):
+        self.__predator.append( predator )
+
+    def occupancy( self ):
+        return self.__occupancy
+
+    def add_occupancy( self, index, value ):
+        self.__occupancy[index] += value
+
+    def set_occupancy( self, index, value ):
+        self.__occupancy[index] = value
 
     def init( self ):
-        self.__occupation = 0
+        self.__occupancy = [ 0, 0 ]
+        self.__animal_food = [ 0, 0 ]
+        self.__prey = []
+        self.__predator = []
 
     def character( self ):
         '''
-        symbol used for this square
+        symbol used for this position
         '''
         character = '.'
 
         if not self.__food == 0:
             character = str( self.__food )
 
-        if self.__occupation == 1:
+        if self.__occupancy[0] == 1:
             character = '@'
-        elif self.__occupation == 2:
-            character = '&'
-        elif self.__occupation > 2:
+        elif self.__occupancy[0] == 2:
+            character = '@@'
+        elif self.__occupancy[0] > 2:
+            character = '@@@'
+
+        if self.__occupancy[1] > 0:
             character = '#'
 
         return character
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
