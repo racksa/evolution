@@ -172,9 +172,9 @@ class space:
         if self.__occupancy[0] == 1:
             character = '@'
         elif self.__occupancy[0] == 2:
-            character = '&'
+            character = '@@'
         elif self.__occupancy[0] > 2:
-            character = '%'
+            character = '@@@'
 
         if self.__occupancy[1] > 0:
             character = '#'

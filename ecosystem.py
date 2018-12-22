@@ -7,12 +7,13 @@ class ecosystem:
 
     def __init__( self, \
                   order,  \
-                  initial_no=[ 10, 1 ], \
-                  initial_hunger=[ 100, 200 ], \
-                  starving_rate=[ 1, 1 ], \
-                  reproduction_threshold=[ 50, 100 ], \
-                  reproduction_transfer=[ 20, 40 ], \
-                  reproduction_rate=[ 7, 20 ], \
+                  initial_no=np.array([ 10, 1 ]), \
+                  initial_hunger=np.array([ 100, 200 ]), \
+                  starving_rate=np.array([ 1, 1 ]), \
+                  reproduction_threshold=np.array([ 50, 100 ]), \
+                  reproduction_transfer=np.array([ 20, 40 ]), \
+                  reproduction_rate=np.array([ 7, 20 ]), \
+                  life_span=np.array([ 100, 100 ]), \
                   initial_food_distribution = [[0,0,0]], \
                 ):
         '''
@@ -31,8 +32,12 @@ class ecosystem:
 
         self.__total_food = 0.
 
+        self.__animal_food = np.array([ 0, 0 ])
+
         # Total no of preys, dead inclusive
-        self.__animal_no = [ 0, 0 ]
+        self.__animal_no = np.array([ 0, 0 ])
+
+        self.__animal_life_no = np.array([ 0, 0 ])
 
         self.__initial_no = initial_no
 
@@ -51,6 +56,8 @@ class ecosystem:
         self.__reproduction_transfer = reproduction_transfer
 
         self.__reproduction_rate = reproduction_rate
+
+        self.__animal_life_span = life_span
 
         # Construct space
         for i in range( order ):
@@ -91,16 +98,8 @@ class ecosystem:
         '''
         Iteration function
         '''
-        # Calculate total food in the system
-        self.__total_food = 0
-        for i in range(self.__space_order):
-            for j in range(self.__space_order):
-                self.__space[i][j].init()
-                self.__total_food += self.__space[i][j].food()
-        for prey in self.__preys:
-            self.__total_food += prey.hunger()
-        for predator in self.__predators:
-            self.__total_food += predator.hunger()
+
+        self.__animal_life_no = np.array([ 0, 0 ])
 
         #
         self.__animals = self.__preys + self.__predators
@@ -124,8 +123,23 @@ class ecosystem:
                 animal.add_age( 1 )
 
                 # Die
-                if animal.hunger() <= 0 or animal.age() >= 100:
+                if animal.hunger() <= 0 or animal.age() >= self.__animal_life_span[animal_type]:
                     animal.die()
+
+        # Calculate total food in the system
+        self.__total_food = 0
+        self.__animal_food = np.array([ 0, 0 ])
+        for i in range(self.__space_order):
+            for j in range(self.__space_order):
+                self.__space[i][j].init()
+                self.__total_food += self.__space[i][j].food()
+        for prey in self.__preys:
+            if not prey.death():
+                self.__animal_food[prey.animal_type()] += prey.hunger()
+        for predator in self.__predators:
+            if not predator.death():
+                self.__animal_food[predator.animal_type()] += predator.hunger()
+        self.__total_food += np.sum( self.__animal_food, 0 )
 
         # update animal list
         self.__animals = self.__preys + self.__predators
@@ -135,6 +149,9 @@ class ecosystem:
             # record the type of this animal
             animal_type = animal.animal_type()
             if not animal.death():
+
+                # calculate animal no.
+                self.__animal_life_no[animal_type] += 1
 
                 allow_movement = False
                 while not allow_movement:
@@ -177,22 +194,23 @@ class ecosystem:
                 prey_occupancy = self.__space[pos[0]][pos[1]].occupancy()[0]
                 predator_occupancy = self.__space[pos[0]][pos[1]].occupancy()[1]
                 if predator_occupancy > 0:
-                    print( 'eaten' )
+                    # presence of predator -> death of prey
                     self.__space[ pos[0] ][ pos[1] ].set_animal_food( prey.animal_type(), 0 )
+                    self.__space[ pos[0] ][ pos[1] ].set_occupancy( prey.animal_type(), 0 )
                     prey.die()
                 else:
+                    # presence of prey -> consumption of food
                     food = self.__space[pos[0]][pos[1]].food()
                     portion = food / prey_occupancy
                     prey.eat( portion )
 
-        # for i in range( self.__space_order ):
-        #     for j in range( self.__space_order ):
-        #         prey_occupancy = self.__space[i][j].occupancy()[0]
-        #         if not prey_occupancy == 0:
-        #             self.__space[i][j].set_food = 0
+        for i in range( self.__space_order ):
+            for j in range( self.__space_order ):
+                prey_occupancy = self.__space[i][j].occupancy()[0]
+                if prey_occupancy > 0:
+                    self.__space[i][j].set_food(0)
 
-
-        self.draw()
+        # self.draw()
         # time.sleep(.5)
 
 
@@ -218,6 +236,15 @@ class ecosystem:
         # Print ecosystem
         for i in output:
             print( i )
+
+    def animal_no( self ):
+        return self.__animal_no
+
+    def animal_life_no( self ):
+        return self.__animal_life_no
+
+    def animal_food( self ):
+        return self.__animal_food
 
 
 
