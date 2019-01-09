@@ -2,13 +2,19 @@ import numpy as np
 
 class animal:
 
-    def __init__( self, pos, id_no, hunger=20 ):
+    def __init__( self, pos, id_no, hunger=20, mobility=1, max_hunger=100 ):
 
         self.__pos = pos
 
         self.__id = id_no
 
-        self.__hunger =  hunger
+        self.__mobility = mobility
+
+        self.__current_mobility = 0
+
+        self.__hunger = hunger
+
+        self.__max_hunger = max_hunger
 
         self.__last_displacement = np.array([])
 
@@ -24,8 +30,35 @@ class animal:
     def id( self ):
         return self.__id
 
+    def mobility( self ):
+        return self.__mobility
+
+    def set_mobility( self, value ):
+        self.__mobility = value
+
+    def current_mobility( self ):
+        return self.__current_mobility
+
+    def set_current_mobility( self, value ):
+        self.__current_mobility = value
+
+    def action_token( self ):
+        token = self.__mobility - self.__current_mobility
+        return token
+
     def hunger( self ):
         return self.__hunger
+
+    def max_hunger( self ):
+        return self.__max_hunger
+
+    def full( self ):
+        return self.__max_hunger - self.__hunger <= 1.e-16
+
+    def eat( self, value, ctype=1 ):
+        self.__hunger += value
+
+        return self.__hunger-value, self.__hunger
 
     def age( self ):
         return self.__age
@@ -39,13 +72,10 @@ class animal:
     def last_displacement( self ):
         return self.__last_displacement
 
-    def eat( self, value, ctype=1 ):
-        self.__hunger += value
-
-        return self.__hunger-value, self.__hunger
-
     def starve( self, value ):
         self.__hunger -= value
+        if self.__hunger < 0:
+            self.__hunger = 0
 
     def move( self, displacement, dis_type ):
         '''
@@ -106,6 +136,8 @@ class space:
 
         self.__occupancy = np.array([ 0, 0 ])
 
+        self.__hunger_occupancy = np.array([ 0, 0 ])
+
     def pos( self ):
         return self.__pos
 
@@ -154,9 +186,21 @@ class space:
     def set_occupancy( self, index, value ):
         self.__occupancy[index] = value
 
-    def init( self ):
-        self.__occupancy = [ 0, 0 ]
-        self.__animal_food = [ 0, 0 ]
+    def hunger_occupancy( self ):
+        return self.__hunger_occupancy
+
+    def add_hunger_occupancy( self, index, value ):
+        self.__hunger_occupancy[index] += value
+
+    def set_hunger_occupancy( self, index, value ):
+        self.__hunger_occupancy[index] = value
+
+    def init_animal_food( self ):
+        self.__animal_food = np.array([ 0., 0. ])
+
+    def init_occupancy( self ):
+        self.__occupancy = np.array([ 0., 0. ])
+        self.__hunger_occupancy = np.array([ 0., 0. ])
         self.__prey = []
         self.__predator = []
 
@@ -167,7 +211,7 @@ class space:
         character = '.'
 
         if not self.__food == 0:
-            character = str( self.__food )
+            character = str( "{0:.0f}".format(self.__food) )
 
         if self.__occupancy[0] == 1:
             character = '@'
@@ -176,8 +220,12 @@ class space:
         elif self.__occupancy[0] > 2:
             character = '@@@'
 
-        if self.__occupancy[1] > 0:
+        if self.__occupancy[1] == 1:
             character = '#'
+        elif self.__occupancy[1] == 2:
+            character = '##'
+        elif self.__occupancy[1] > 2:
+            character = '###'
 
         return character
 
