@@ -9,12 +9,12 @@ class ecosystem:
                   order,  \
                   initial_no=np.array([ 10, 1 ]), \
                   initial_hunger=np.array([ 100, 200 ]), \
-                  starving_rate=np.array([ 1, 1 ]), \
+                  hunger_rate=np.array([ 1, 1 ]), \
                   reproduction_threshold=np.array([ 50, 100 ]), \
                   reproduction_transfer=np.array([ 20, 40 ]), \
                   reproduction_rate=np.array([ 7, 20 ]), \
                   life_span=np.array([ 100, 100 ]), \
-                  animal_mobility=np.array([ 1, 3 ]), \
+                  animal_speed=np.array([ 1, 3 ]), \
                   animal_max_hunger=np.array([ 100, 200 ]), \
                   animal_consume_rate=np.array([ 5, 20 ]), \
                   initial_food_distribution = [[0,0,0]], \
@@ -43,6 +43,8 @@ class ecosystem:
 
         self.__vege_food = 0.
 
+        self.__max_speed = 0.
+
         # Total no of preys, dead inclusive
         self.__animal_no = np.array([ 0, 0 ])
 
@@ -51,7 +53,7 @@ class ecosystem:
         # parameters
         self.__initial_no = initial_no
 
-        self.__starving_rate = starving_rate
+        self.__hunger_rate = hunger_rate
 
         self.__reproduction_threshold = reproduction_threshold
 
@@ -61,9 +63,7 @@ class ecosystem:
 
         self.__animal_life_span = life_span
 
-        self.__animal_original_mobility = animal_mobility
-
-        self.__animal_mobility = np.zeros( np.shape( animal_mobility ) )
+        self.__animal_speed = np.zeros( np.shape( animal_speed ) )
 
         self.__animal_max_hunger = animal_max_hunger
 
@@ -71,36 +71,124 @@ class ecosystem:
 
         self.__enable_draw = enable_draw
 
-        # putting in prey and predator
-        for animal_type in range( 2 ):
-            for i in range( self.__initial_no[animal_type] ):
-                x = random.randint(0,order-1)
-                y = random.randint(0,order-1)
-                self.add_animal( animal_type, np.array([ x, y ]), initial_hunger[animal_type] )
+        # analysis variables
+        self.__frame = 0
 
-        # Construct space
+        self.__prey_no_array = np.array([])
+
+        self.__predator_no_array = np.array([])
+
+        self.__frame_array = np.array([])
+
+        # Initializing prey and predator
+        # for animal_type in range( 2 ):
+        #     for i in range( self.__initial_no[animal_type] ):
+        #         x = random.randint(0,order-1)
+        #         y = random.randint(0,order-1)
+        #         self.add_animal( animal_type, \
+        #                          np.array([ x, y ]), \
+        #                          initial_hunger[animal_type], \
+        #                          animal_speed[animal_type], \
+        #                          animal_max_hunger[animal_type], \
+        #                          reproduction_threshold[animal_type], \
+        #                          reproduction_transfer[animal_type], \
+        #                          reproduction_rate[animal_type], \
+        #                          hunger_rate[animal_type], \
+        #                          life_span[animal_type], \
+        #                          animal_consume_rate[animal_type], \
+        #                          0, \
+        #                          0, \
+        #                          0, \
+        #                          0, \
+        #                         )
+
+        # Construct space and initialize animals
         for i in range( order ):
             for j in range( order ):
                 self.__space[i][j] = objects.space( [i,j] )
+
+                if i % 2 == 0 and j % 2 == 0 and not i == 0 and not j == 0:
+                    animal_type = 0
+                    self.add_animal( animal_type, \
+                                     np.array([ i, j ]), \
+                                     initial_hunger[animal_type], \
+                                     animal_speed[animal_type], \
+                                     animal_max_hunger[animal_type], \
+                                     reproduction_threshold[animal_type], \
+                                     reproduction_transfer[animal_type], \
+                                     reproduction_rate[animal_type], \
+                                     hunger_rate[animal_type], \
+                                     life_span[animal_type], \
+                                     animal_consume_rate[animal_type], \
+                                     5, \
+                                     15, \
+                                     5, \
+                                     15, \
+                                    )
+
 
         # Initialize food
         for food in initial_food_distribution:
             self.__space[food[0]][food[1]].add_food(food[2])
 
-        if self.__enable_draw:
-            self.draw()
-
-
-    def add_animal( self, animal_type, position, hunger=20 ):
+    def add_animal( self, \
+                    animal_type, \
+                    position, \
+                    hunger, \
+                    speed, \
+                    max_hunger,\
+                    reproduction_threshold, \
+                    reproduction_transfer, \
+                    reproduction_rate, \
+                    hunger_rate,\
+                    life_span, \
+                    consume_rate, \
+                    hunger_rate_gene, \
+                    reproduction_rate_gene, \
+                    life_span_gene, \
+                    consume_rate_gene, \
+                    ):
         '''
         add ONE prey to the ecosystem
         '''
         if animal_type == 0:
-            self.__preys.append( objects.prey( position, self.__animal_no[0], hunger, self.__animal_mobility[0], self.__animal_max_hunger[0] ) )
+            self.__preys.append( objects.prey( self.__animal_no[0], \
+                                               position, \
+                                               hunger, \
+                                               speed, \
+                                               max_hunger, \
+                                               reproduction_threshold, \
+                                               reproduction_transfer, \
+                                               reproduction_rate, \
+                                               hunger_rate,\
+                                               life_span, \
+                                               consume_rate, \
+                                               hunger_rate_gene, \
+                                               reproduction_rate_gene, \
+                                               life_span_gene, \
+                                               consume_rate_gene, \
+                                               ) )
             self.__animal_no += np.array([ 1, 0 ])
+            self.__max_speed = max( self.__preys[-1].speed_value(), self.__max_speed )
         if animal_type == 1:
-            self.__predators.append( objects.predator( position, self.__animal_no[1], hunger, self.__animal_mobility[1], self.__animal_max_hunger[1] ) )
+            self.__predators.append( objects.predator( self.__animal_no[1], \
+                                                       position, \
+                                                       hunger, \
+                                                       speed, \
+                                                       max_hunger,\
+                                                       reproduction_threshold, \
+                                                       reproduction_transfer, \
+                                                       reproduction_rate, \
+                                                       hunger_rate,\
+                                                       life_span, \
+                                                       consume_rate, \
+                                                       hunger_rate_gene, \
+                                                       reproduction_rate_gene, \
+                                                       life_span_gene, \
+                                                       consume_rate_gene, \
+                                                       ) )
             self.__animal_no += np.array([ 0, 1 ])
+            self.__max_speed = max( self.__predators[-1].speed_value(), self.__max_speed )
 
     def add_food( self, position, value ):
         '''
@@ -115,16 +203,9 @@ class ecosystem:
         Iteration function
         '''
         #
-        self.__animals = self.__preys + self.__predators
 
-        # modify mobility according to animal no.
-        for i in range( len( self.__animal_mobility ) ):
-            if self.__animal_life_no[i] < 4 and self.__animal_life_no[i] > 0:
-                self.__animal_mobility[i] = self.__animal_original_mobility[i] + 2
-            elif self.__animal_life_no[i] < 20 and self.__animal_life_no[i] > 0:
-                self.__animal_mobility[i] = self.__animal_original_mobility[i] + 1
-            else:
-                self.__animal_mobility[i] = self.__animal_original_mobility[i]
+
+        self.__animals = self.__preys + self.__predators
 
         # Reproduce, starve, die
         for animal in self.__animals:
@@ -132,26 +213,43 @@ class ecosystem:
             animal_type = animal.animal_type()
             if not animal.death():
                 # Reproduce
-                if( animal.age() % self.__reproduction_rate[ animal_type ] == 0 and \
-                    not animal.age() == 0 and \
-                    animal.hunger() >= self.__reproduction_threshold[ animal_type ] ):
-                    animal.reproduce( self.__reproduction_transfer[ animal_type ] )
-                    self.add_animal( animal_type, animal.pos(), self.__reproduction_transfer[ animal_type ] )
+                if( animal.reproduction_check() ):
+                    animal.reproduce()
 
-                # Starve
-                animal.starve( self.__starving_rate[ animal_type ] )
+                    # Gene mutation control
+                    hunger_rate_gene_var = random.uniform( -1, 1 )
+                    reproduction_rate_gene_var = random.uniform( -1, 1 )
+                    life_span_gene_var = hunger_rate_gene_var
+                    consume_rate_gene_var = reproduction_rate_gene_var
 
-                # Aged
-                animal.add_age( 1 )
+                    # hunger_rate_gene_var = 0
+                    # reproduction_rate_gene_var = 0
+                    # life_span_gene_var = 0
+                    # consume_rate_gene_var = 0
 
-                # modify animal mobility
-                animal.set_mobility( self.__animal_mobility[ animal_type ] )
+                    self.add_animal( animal_type, \
+                                     animal.pos(), \
+                                     animal.reproduction_transfer(), \
+                                     animal.speed(), \
+                                     animal.max_hunger(), \
+                                     animal.reproduction_threshold(), \
+                                     animal.reproduction_transfer(), \
+                                     animal.reproduction_rate(), \
+                                     animal.hunger_rate(), \
+                                     animal.life_span(), \
+                                     animal.consume_rate() ,\
+                                     animal.hunger_rate_gene() + hunger_rate_gene_var, \
+                                     animal.reproduction_rate_gene() + reproduction_rate_gene_var, \
+                                     animal.life_span_gene() + life_span_gene_var, \
+                                     animal.consume_rate_gene() + consume_rate_gene_var, \
+                                     )
 
-                # reset action token
-                animal.set_current_mobility( 0 )
+                animal.starve()
+                animal.aged()
+                animal.set_current_movement( 0 ) # reset action token
 
                 # Die
-                if animal.hunger() <= 0 or animal.age() >= self.__animal_life_span[animal_type]:
+                if( animal.die_check() ):
                     pos = animal.pos()
                     self.__space[ pos[0] ][ pos[1] ].add_food( animal.hunger() )
                     animal.die()
@@ -159,9 +257,12 @@ class ecosystem:
         # update animal list
         self.__animals = self.__preys + self.__predators
 
+        # Dump the list
+        self.__animals = [x for x in self.__animals if not x.death() ]
+
         # animal movement / consumption
-        # repreat the process up to the highet mobility of animals
-        for action in range( int( max( self.__animal_mobility ) ) ):
+        # repreat the process up to the highet speed of animals
+        for action in range( int( self.__max_speed ) ):
             # reset occupancy
             for i in range(self.__space_order):
                 for j in range(self.__space_order):
@@ -178,7 +279,7 @@ class ecosystem:
                     if animal.action_token() > 0:
                         animal.set_pos( animal.pos() + self.animal_random_movement( animal.pos() )[1] )
 
-                        # Calculate no. animals that are hungry- animals will share foods
+                        # Calculate no. of animals that are hungry- animals will share foods
                         if not animal.full():
                             self.__space[ animal.pos()[0] ][ animal.pos()[1] ].add_hunger_occupancy( animal_type, 1 )
                     pos = animal.pos()
@@ -193,12 +294,19 @@ class ecosystem:
                 # predator shares food
                 if not predator.death() and predator.action_token() > 0 and not predator.full():
                     pos = predator.pos()
-                    predator_hunger_occupancy = self.__space[pos[0]][pos[1]].hunger_occupancy()[1]
-                    # consume next level animal( prey )
-                    food = self.__space[ pos[0] ][ pos[1] ].animal_food()[ predator.animal_type()-1 ]
-                    portion = food / predator_hunger_occupancy
-                    predator.eat( portion )
-                    predator.set_current_mobility( predator.current_mobility() + 1 )
+                    if not predator.full():
+                        predator_hunger_occupancy = self.__space[pos[0]][pos[1]].hunger_occupancy()[1]
+                        # consume next level animal( prey )
+                        food = self.__space[ pos[0] ][ pos[1] ].animal_food()[ 0 ]
+                        if  food >= predator.consume_rate_value():
+                            predator.eat( predator.consume_rate_value() )
+                            self.__space[pos[0]][pos[1]].add_animal_food( 0, -prey.consume_rate_value() )
+                        if food < prey.consume_rate_value():
+                            predator.eat( food )
+                            self.__space[pos[0]][pos[1]].set_animal_food( 0, 0 )
+                        # portion = food / predator_hunger_occupancy
+                        # predator.eat( portion )
+                    predator.set_current_movement( predator.current_movement() + 1 )
 
             # prey consumption / being consumed
             for prey in self.__preys:
@@ -217,29 +325,43 @@ class ecosystem:
                         if not prey.full():
                             prey_hunger_occupancy = self.__space[pos[0]][pos[1]].hunger_occupancy()[0]
                             food = self.__space[pos[0]][pos[1]].food()
-                            consume_rate = self.__animal_consume_rate[ prey.animal_type() ]
-                            if food >= prey_hunger_occupancy * consume_rate: # enough food
-                                prey.eat( consume_rate )
-                            else: # not enough food
-                                portion = food / prey_hunger_occupancy
-                                prey.eat( portion )
-                        prey.set_current_mobility( prey.current_mobility() + 1 )
+                            if  food >= prey.consume_rate_value():
+                                prey.eat( prey.consume_rate_value() )
+                                self.__space[pos[0]][pos[1]].add_food( -prey.consume_rate_value() )
+                            if food < prey.consume_rate_value():
+                                prey.eat( food )
+                                self.__space[pos[0]][pos[1]].set_food( 0 )
+
+                            # consume_rate = self.__animal_consume_rate[ prey.animal_type() ]
+                            # if food >= prey_hunger_occupancy * consume_rate: # enough food
+                            #
+                            # else: # not enough food
+                            #     portion = food / prey_hunger_occupancy
+                            #     prey.eat( portion )
+                        prey.set_current_movement( prey.current_movement() + 1 )
 
             # level 0 food (plant) being consumed
-            for i in range( self.__space_order ):
-                for j in range( self.__space_order ):
-                    prey_hunger_occupancy = self.__space[i][j].hunger_occupancy()[0]
-                    # food being consumed
-                    if prey_hunger_occupancy > 0:
-                        self.__space[i][j].add_food( - prey_hunger_occupancy * self.__animal_consume_rate[ 0 ] )
-                        if self.__space[i][j].food() < 0 :
-                            self.__space[i][j].set_food( 0 )
+            # for i in range( self.__space_order ):
+            #     for j in range( self.__space_order ):
+            #         prey_hunger_occupancy = self.__space[i][j].hunger_occupancy()[0]
+            #         # food being consumed
+            #         if prey_hunger_occupancy > 0:
+            #             self.__space[i][j].add_food( - prey_hunger_occupancy * self.__animal_consume_rate[ 0 ] )
+            #             if self.__space[i][j].food() < 0 :
+            #                 self.__space[i][j].set_food( 0 )
 
-        # calculate alive animal no.
-        self.calculate_alive_animal_no()
 
-        # Calculate total food in the system
+
+        # Analysis part
         self.calculate_total_food()
+
+        self.__prey_no_array[self.__frame] = self.calculate_alive_animal_no()[0]
+
+        self.__predator_no_array[self.__frame] = self.calculate_alive_animal_no()[1]
+
+        self.__frame_array[self.__frame] = self.__frame
+
+        self.__frame += 1
 
         # investigate graphically
         if self.__enable_draw:
@@ -267,27 +389,123 @@ class ecosystem:
     def set_food_capacity( self, value ):
         self.__food_capacity = value
 
+    def frame( self ):
+        return self.__frame
+
+    def prey_no_array( self ):
+        return self.__prey_no_array
+
+    def predator_no_array( self ):
+        return self.__predator_no_array
+
+    def frame_array( self ):
+        return self.__frame_array
+
+    def prey_hunger_rate( self ):
+        hunger_rate_array = np.array([])
+        for prey in self.__preys:
+            if not prey.death():
+                hunger_rate_array = np.append( hunger_rate_array, prey.hunger_rate_value() )
+        return hunger_rate_array
+
+    def prey_hunger_rate_genevalue( self ):
+        hunger_rate_gene_array = np.array([])
+        for prey in self.__preys:
+            if not prey.death():
+                hunger_rate_gene_array = np.append( hunger_rate_gene_array, prey.hunger_rate_gene() )
+        return hunger_rate_gene_array
+
+    def prey_reproduction_rate( self ):
+        reproduction_rate_array = np.array([])
+        for prey in self.__preys:
+            if not prey.death():
+                reproduction_rate_array = np.append( reproduction_rate_array, prey.reproduction_rate_value() )
+        return reproduction_rate_array
+
+    def prey_reproduction_rate_genevalue( self ):
+        reproduction_rate_gene_array = np.array([])
+        for prey in self.__preys:
+            if not prey.death():
+                reproduction_rate_gene_array = np.append( reproduction_rate_gene_array, prey.reproduction_rate_gene() )
+        return reproduction_rate_gene_array
+
+    def prey_speed( self ):
+        speed_array = np.array([])
+        for prey in self.__preys:
+            if not prey.death():
+                speed_array = np.append( speed_array, prey.speed_value() )
+        return speed_array
+
+    def prey_life_span( self ):
+        life_span_array = np.array([])
+        for prey in self.__preys:
+            if not prey.death():
+                life_span_array = np.append( life_span_array, prey.life_span_value() )
+        return life_span_array
+
+    def prey_life_span_genevalue( self ):
+        life_span_gene_array = np.array([])
+        for prey in self.__preys:
+            if not prey.death():
+                life_span_gene_array = np.append( life_span_gene_array, prey.life_span_gene() )
+        return life_span_gene_array
+
+    def prey_consume_rate( self ):
+        consume_rate_array = np.array([])
+        for prey in self.__preys:
+            if not prey.death():
+                consume_rate_array = np.append( consume_rate_array, prey.consume_rate_value() )
+        return consume_rate_array
+
+    def prey_consume_rate_genevalue( self ):
+        consume_rate_gene_array = np.array([])
+        for prey in self.__preys:
+            if not prey.death():
+                consume_rate_gene_array = np.append( consume_rate_gene_array, prey.consume_rate_gene() )
+        return consume_rate_gene_array
+
+    def predator_hunger_rate( self ):
+        hunger_rate_array = np.array([])
+        for predator in self.__predators:
+            if not predator.death():
+                hunger_rate_array = np.append( hunger_rate_array, predator.hunger_rate() )
+        return hunger_rate_array
+
+    def initialize_data_array( self, iteration_number ):
+        '''
+        the argument is the no. of evolutions waited to be done
+        '''
+        self.__prey_no_array = np.append( self.__prey_no_array[:self.__frame], np.zeros( iteration_number ) )
+        self.__predator_no_array = np.append( self.__predator_no_array[:self.__frame], np.zeros( iteration_number ) )
+        self.__frame_array = np.append( self.__frame_array[:self.__frame], np.zeros( iteration_number ) )
+
     def animal_random_movement( self, animal_pos ):
         '''
         return a valid random movement vector
         uses input of original position to check movement validity
         '''
-        allow_movement = False
-        while not allow_movement:
-            direction = random.randint(1,4)
+        direction = random.randint(1,4)
 
-            if   direction == 1 and animal_pos[0] < self.__space_order-1:
+        if   direction == 1:
+            if animal_pos[0] < self.__space_order-1:
                 displacement = [ 1, 0 ]
-                allow_movement = True
-            elif direction == 2 and animal_pos[1] < self.__space_order-1:
+            else:
+                displacement = [ -self.__space_order + 1, 0 ]
+        elif direction == 2:
+            if animal_pos[1] < self.__space_order-1:
                 displacement = [ 0, 1 ]
-                allow_movement = True
-            elif direction == 3 and animal_pos[0] > 0:
+            else:
+                displacement = [ 0, -self.__space_order + 1 ]
+        elif direction == 3:
+            if animal_pos[0] > 0:
                 displacement = [ -1, 0 ]
-                allow_movement = True
-            elif direction == 4 and animal_pos[1] > 0:
+            else:
+                displacement = [ self.__space_order - 1, 0 ]
+        elif direction == 4:
+            if animal_pos[1] > 0:
                 displacement = [ 0, -1 ]
-                allow_movement = True
+            else:
+                displacement = [ 0, self.__space_order - 1 ]
 
         return direction, displacement
 
@@ -338,9 +556,11 @@ class ecosystem:
         # Print information
         for animal in self.__animals:
             if animal.death():
-                print ( animal, 'dead', 'age', animal.age(), 'offspring', animal.offsprings(), animal.pos() )
+                print( animal )
+                #print ( animal, 'dead', 'age', animal.age(), 'offspring', animal.offsprings(), animal.pos() )
             else:
-                print ( animal, 'hunger:', "{0:.2f}".format(animal.hunger()), 'age', animal.age(), 'offspring', animal.offsprings(), animal.pos() )
+                print ( animal )
+                #print ( animal, 'hunger:', "{0:.2f}".format(animal.hunger()), 'age', animal.age(), 'offspring', animal.offsprings(), animal.pos() )
 
         print( 'animal / plant   ', sum(self.__animal_food), '/', self.__vege_food )
         print( 'total food       ', self.__total_food )
