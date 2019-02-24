@@ -20,6 +20,8 @@ class animal:
                   reproduction_rate_gene, \
                   life_span_gene, \
                   consume_rate_gene, \
+                  no_offspring_gene, \
+                  fighting_gene, \
                   ):
         #
         self.__pos = pos
@@ -39,13 +41,13 @@ class animal:
         self.__consume_rate_gene = consume_rate_gene
         self.__consume_rate = consume_rate
 
-        # self.__no_offspring_gene = no_offspirng_gene
+        self.__no_offspring_gene = no_offspring_gene
+
+        self.__fighting_gene = fighting_gene
 
         # traits
         self.__speed = speed
         self.__speed_value = self.__speed
-
-
 
 
 
@@ -55,14 +57,33 @@ class animal:
         # self.__life_span_value = int( max( 1, life_span * myMath.gaussian( life_span_gene, 0, 3 ) ) )
 
         #Linear mapping
-        self.__hunger_rate_value = max( 0.1, myMath.linear( hunger_rate_gene, hunger_rate, 0.5 ) )
+        if self.animal_type() == 0:
+            self.__hunger_rate_value = max( 0.1, myMath.linear( hunger_rate_gene, .1, hunger_rate ) )
 
-        self.__life_span_value = int( max( 1, myMath.linear( life_span_gene, life_span, 10 ) ) )
+            self.__life_span_value = int( max( 1, myMath.linear( life_span_gene, 5, life_span ) ) )
 
-        self.__reproduction_rate_value = max( 1, myMath.linear( reproduction_rate_gene, reproduction_rate, 6 ) )
+            self.__reproduction_rate_value = max( 1, myMath.linear( reproduction_rate_gene, .5, reproduction_rate ) )
 
-        self.__consume_rate_value = max( 0.1, myMath.linear( consume_rate_gene, consume_rate, 3 ) )
+            self.__consume_rate_value = max( 0.1, myMath.linear( consume_rate_gene, consume_rate, 3 ) )
 
+            self.__no_offspring_value = int( self.__no_offspring_gene )
+
+            self.__fighting_value = .3 - 20. * np.exp( - fighting_gene )
+
+            # self.__fighting_value = myMath.linear( fighting_gene, .02, 0 )
+
+        if self.animal_type() == 1:
+            self.__hunger_rate_value = max( 0.1, myMath.linear( hunger_rate_gene, 0., hunger_rate ) )
+
+            self.__life_span_value = int( max( 1, myMath.linear( life_span_gene, 0, life_span ) ) )
+
+            self.__reproduction_rate_value = max( 1, myMath.linear( reproduction_rate_gene, 0., reproduction_rate ) )
+
+            self.__consume_rate_value = max( 0.1, myMath.linear( consume_rate_gene, 0, consume_rate ) )
+
+            self.__no_offspring_value = 1
+
+            self.__fighting_value = 0
 
         #
         self.__current_movement = 0
@@ -145,6 +166,12 @@ class animal:
     def hunger_rate_value( self ):
         return self.__hunger_rate_value
 
+    def no_offspring_gene( self ):
+        return self.__no_offspring_gene
+
+    def no_offspring_value( self ):
+        return self.__no_offspring_value
+
     def life_span( self ):
         return self.__life_span
 
@@ -162,6 +189,12 @@ class animal:
 
     def consume_rate_value( self ):
         return self.__consume_rate_value
+
+    def fighting_gene( self ):
+        return self.__fighting_gene
+
+    def fighting_value( self ):
+        return self.__fighting_value
 
     def full( self ):
         return self.__max_hunger - self.__hunger <= 1.e-16
@@ -222,7 +255,7 @@ class animal:
 
     def reproduce( self ):
         self.__hunger -= self.__reproduction_transfer
-        self.__offspring += 1
+        self.__offspring += self.__no_offspring_value
         return 0
 
     def reproduction_check( self ):
