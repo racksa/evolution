@@ -8,7 +8,6 @@ class animal:
                   id_no, \
                   pos, \
                   hunger, \
-                  speed, \
                   max_hunger,\
                   reproduction_threshold, \
                   reproduction_transfer, \
@@ -45,10 +44,6 @@ class animal:
 
         self.__fighting_gene = fighting_gene
 
-        # traits
-        self.__speed = speed
-        self.__speed_value = self.__speed
-
 
 
         #Gaussian mapping
@@ -60,7 +55,7 @@ class animal:
         if self.animal_type() == 0:
             self.__hunger_rate_value = max( 0.1, myMath.linear( hunger_rate_gene, .1, hunger_rate ) )
 
-            self.__life_span_value = int( max( 1, myMath.linear( life_span_gene, 5, life_span ) ) )
+            self.__life_span_value = int( max( 1, myMath.linear( life_span_gene, 0, life_span ) ) )
 
             self.__reproduction_rate_value = max( 1, myMath.linear( reproduction_rate_gene, .5, reproduction_rate ) )
 
@@ -68,7 +63,7 @@ class animal:
 
             self.__no_offspring_value = int( self.__no_offspring_gene )
 
-            self.__fighting_value = .3 - 20. * np.exp( - fighting_gene )
+            self.__fighting_value = .5 - 20. * np.exp( - fighting_gene )
 
             # self.__fighting_value = myMath.linear( fighting_gene, .02, 0 )
 
@@ -116,25 +111,6 @@ class animal:
 
     def id( self ):
         return self.__id
-
-    def speed( self ):
-        return self.__speed
-
-    def set_speed( self, value ):
-        self.__speed = value
-
-    def speed_value( self ):
-        return self.__speed_value
-
-    def current_movement( self ):
-        return self.__current_movement
-
-    def set_current_movement( self, value ):
-        self.__current_movement = value
-
-    def action_token( self ):
-        token = self.__speed - self.__current_movement
-        return token
 
     def hunger( self ):
         return self.__hunger
@@ -283,7 +259,6 @@ class prey(animal):
         return 'prey' + str( self.id() ) + ' ' + str( self.pos() ) + ' ' + \
                'age ' + str( self.age() ) + '/' + str( self.life_span_value() ) + ' ' + \
                'hunger: ' + "{0:.2f}".format( self.hunger() ) + '/' + "{0:.2f}".format( self.max_hunger() ) + '\n' + \
-               'speed: ' + str( self.speed() ) + '\n' + \
                'rep_threshold: ' + str( self.reproduction_threshold() ) + '\n' + \
                'rep_transfer: ' + str( self.reproduction_transfer() ) + '\n' + \
                'rep_rate: ' + str( self.reproduction_rate() ) + '\n' + \
@@ -306,7 +281,6 @@ class predator(animal):
         return 'prey' + str( self.id() ) + ' ' + str( self.pos() ) + ' ' + \
                'age ' + str( self.age() ) + '/' + str( self.life_span_value() ) + ' ' + \
                'hunger: ' + "{0:.2f}".format( self.hunger() ) + '/' + "{0:.2f}".format( self.max_hunger() ) + '\n' + \
-               'speed: ' + str( self.speed() ) + '\n' + \
                'rep_threshold: ' + str( self.reproduction_threshold() ) + '\n' + \
                'rep_transfer: ' + str( self.reproduction_transfer() ) + '\n' + \
                'rep_rate: ' + str( self.reproduction_rate() ) + '\n' + \
