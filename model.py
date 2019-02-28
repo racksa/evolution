@@ -18,14 +18,14 @@ load_file = 'save_file'
 # The name of the file that you want to save
 save_file = 'save_file'
 
-frame_number = 1001
+frame_number = 401
 enable_draw = False
 auto_stop_count = 0
 
 # dimension of space
 dimension = 10
 # order of space
-order = 30
+order = 20
 # initial prey number
 initial_prey_no = 0
 # initial predator number
@@ -36,15 +36,15 @@ def exponential( x, k ):
     return 1000*np.exp(k*x)
 
 # condition for bugs to reproduce
-prey_reproduction_threshold=24
+prey_reproduction_threshold=20
 # hunger transfered to offspring
-prey_reproduction_transfer=4
+prey_reproduction_transfer=.6
 # every n cycle the bug will reproduce
-prey_reproduction_rate=.5
+prey_reproduction_rate=5
 # hunger decresing rate
-prey_hunger_rate=0.5
+prey_hunger_rate=.1
 # prey life span
-prey_life_span=40
+prey_life_span=20
 # prey max hunger
 prey_max_hunger=30
 # initial hunger value of prey
@@ -53,11 +53,11 @@ initial_prey_hunger=10
 prey_consume_rate=.2
 
 # condition for bugs to reproduce
-predator_reproduction_threshold=60
+predator_reproduction_threshold=80
 # hunger transfered to offspring
-predator_reproduction_transfer=30
+predator_reproduction_transfer=.6
 # every n cycle the predator will reproduce
-predator_reproduction_rate=20
+predator_reproduction_rate=30
 # hunger decresing rate
 predator_hunger_rate=1.
 # predator life span
@@ -148,6 +148,10 @@ ax6 = fig2.add_subplot(222)
 ax7 = fig2.add_subplot(223)
 ax8 = fig2.add_subplot(224)
 
+fig3 =plt.figure()
+
+
+
 def draw_gene():
     '''
     plot gene pool
@@ -205,6 +209,17 @@ def draw_gene():
 
     fig2.savefig( './fig/' + '2-' +str(frame) + '.png' )
 
+    # ax_landscape.hist()
+    ax_landscape = fig3.add_subplot(111)
+
+    H, xedges, yedges = np.histogram2d(ecosystem_instance.prey_hunger_rate_genevalue(), ecosystem_instance.prey_reproduction_rate_genevalue(), bins=30 )
+    H = H.T  # Let each row list bins with common y range.
+    cax = ax_landscape.imshow(H, interpolation='nearest', origin='low', extent=[0, 15, 10, 30], vmin = 0, vmax = 25 )
+
+    plt.colorbar( cax )
+    fig3.savefig( './fig/' + '3-' +str(frame) + '.png' )
+
+    plt.clf()
 
 ################################################################################
 # Evoluting system
@@ -247,13 +262,18 @@ for frame in range( int(frame_number) ):
         system_list.append( copy.deepcopy(ecosystem_instance) )
 
     # if frame % (frame_number/5) == 0 and not frame ==0:
-    if ( (frame+1) % 150 == 0 ) or frame+1 == frame_number:
+    if ( (frame+1) % 10 == 0 ) or frame+1 == frame_number:
         draw_gene()
 
+    if frame == 10:
+        ecosystem_instance.species_invasion( 20 )
+    #
+    # if frame == 500:
+    #     food_generation_no = int( food_generation_no* 2. )
 
 
-system_list.append( copy.deepcopy(ecosystem_instance) )
 print( '***Saving current session***' )
+system_list.append( copy.deepcopy(ecosystem_instance) )
 
 # save current instance
 with open( save_file, 'wb' ) as output:

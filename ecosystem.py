@@ -50,6 +50,10 @@ class ecosystem:
         # parameters
         self.__initial_no = initial_no
 
+        self.__initial_hunger = initial_hunger
+
+        self.__life_span = life_span
+
         self.__hunger_rate = hunger_rate
 
         self.__reproduction_threshold = reproduction_threshold
@@ -85,6 +89,8 @@ class ecosystem:
 
         self.__predator_death = 0
 
+        self.__prey_two_gene = list()
+
 
 
         # Construct space and initialize animals
@@ -92,8 +98,12 @@ class ecosystem:
             for j in range( order ):
                 self.__space[i][j] = objects.space( [i,j] )
 
+                animal_type = 0
                 if i % 2 == 0 and j % 2 == 0 and not i == 0 and not j == 0:
-                    animal_type = 0
+
+                    start_gene_1 = random.uniform( 1,20 )
+                    start_gene_2 = random.uniform( 1, 10 )
+
                     self.add_animal( animal_type, \
                                      np.array([ i, j ]), \
                                      initial_hunger[animal_type], \
@@ -104,38 +114,21 @@ class ecosystem:
                                      hunger_rate[animal_type], \
                                      life_span[animal_type], \
                                      animal_consume_rate[animal_type], \
-                                     5, \
-                                     15, \
-                                     5, \
-                                     15, \
-                                     1, \
-                                     10, \
+                                     start_gene_1, \
+                                     start_gene_2, \
+                                     0, \
+                                     0, \
+                                     start_gene_2, \
+                                     start_gene_1, \
+                                     start_gene_2
                                     )
 
 
-        animal_type = 1
-        for i in range(20):
-            self.add_animal( animal_type, \
-                             np.array([ 3, 3 ]), \
-                             initial_hunger[animal_type], \
-                             animal_max_hunger[animal_type], \
-                             reproduction_threshold[animal_type], \
-                             reproduction_transfer[animal_type], \
-                             reproduction_rate[animal_type], \
-                             hunger_rate[animal_type], \
-                             life_span[animal_type], \
-                             animal_consume_rate[animal_type], \
-                             0, \
-                             0, \
-                             5, \
-                             15, \
-                             1, \
-                             10, \
-                            )
 
-            # Initialize food
-            for food in initial_food_distribution:
-                self.__space[food[0]][food[1]].add_food(food[2])
+        #
+        #     # Initialize food
+        #     for food in initial_food_distribution:
+        #         self.__space[food[0]][food[1]].add_food(food[2])
 
     def add_animal( self, \
                     animal_type, \
@@ -154,6 +147,7 @@ class ecosystem:
                     consume_rate_gene, \
                     no_offspring_gene, \
                     fighting_gene, \
+                    reproduction_threshold_gene, \
                     ):
         '''
         add ONE prey to the ecosystem
@@ -175,6 +169,7 @@ class ecosystem:
                                                consume_rate_gene, \
                                                no_offspring_gene, \
                                                fighting_gene, \
+                                               reproduction_threshold_gene, \
                                                ) )
             self.__animal_no += np.array([ 1, 0 ])
         if animal_type == 1:
@@ -194,6 +189,7 @@ class ecosystem:
                                                        consume_rate_gene, \
                                                        no_offspring_gene, \
                                                        fighting_gene, \
+                                                       reproduction_threshold_gene, \
                                                        ) )
             self.__animal_no += np.array([ 0, 1 ])
 
@@ -222,27 +218,38 @@ class ecosystem:
             if not animal.death():
                 # Reproduce
                 if( animal.reproduction_check() ):
-                    animal.reproduce()
-
-                    # Gene mutation control
-                    hunger_rate_gene_var = random.uniform( -1, 1 )
-                    reproduction_rate_gene_var = random.uniform( -1, 1 )
-                    life_span_gene_var = 0
-                    consume_rate_gene_var = 0
-                    no_offspring_gene_var = reproduction_rate_gene_var
-                    fighting_gene_var = hunger_rate_gene_var
-
-                    # hunger_rate_gene_var = 0
-                    # reproduction_rate_gene_var = 0
-                    # life_span_gene_var = 0
-                    # consume_rate_gene_var = 0
-                    # no_offspring_gene_var = 0
-                    # fighting_gene_var = 0
-
+                    # Reproduction
                     for i in range( animal.no_offspring_value() ):
+                        # Gene mutation control
+                        # 1
+                        gene1_var = random.uniform( -1, 1 )
+                        gene2_var = random.uniform( -1, 1 )
+                        # 2
+
+                        new_hunger_rate_gene = animal.hunger_rate_gene() + gene1_var
+                        if new_hunger_rate_gene > 20:
+                            new_hunger_rate_gene -= random.uniform( 1, 19 )
+                        if new_hunger_rate_gene < 1:
+                            new_hunger_rate_gene += random.uniform( 1, 19 )
+                        new_fighting_gene = new_hunger_rate_gene
+
+                        new_life_span_gene = animal.life_span_gene() + 0
+                        new_consume_rate_gene = animal.consume_rate_gene() + 0
+
+
+                        new_reproduction_threshold_gene = animal.reproduction_threshold_gene() + gene2_var
+                        if new_reproduction_threshold_gene > 10:
+                            new_reproduction_threshold_gene -= random.uniform( 1, 9 )
+                        if new_reproduction_threshold_gene < 1:
+                            new_reproduction_threshold_gene += random.uniform( 1, 9 )
+                        new_reproduction_rate_gene = new_reproduction_threshold_gene
+                        new_no_offspring_gene = new_reproduction_threshold_gene
+
+                        transfer = animal.reproduction_transfer()*animal.hunger()/animal.no_offspring_value()
+
                         self.add_animal( animal_type, \
                                          animal.pos(), \
-                                         animal.reproduction_transfer(), \
+                                         transfer, \
                                          animal.max_hunger(), \
                                          animal.reproduction_threshold(), \
                                          animal.reproduction_transfer(), \
@@ -250,18 +257,20 @@ class ecosystem:
                                          animal.hunger_rate(), \
                                          animal.life_span(), \
                                          animal.consume_rate() ,\
-                                         animal.hunger_rate_gene() + hunger_rate_gene_var, \
-                                         animal.reproduction_rate_gene() + reproduction_rate_gene_var, \
-                                         animal.life_span_gene() + life_span_gene_var, \
-                                         animal.consume_rate_gene() + consume_rate_gene_var, \
-                                         animal.no_offspring_gene() + no_offspring_gene_var, \
-                                         animal.fighting_gene() + fighting_gene_var,\
+                                         new_hunger_rate_gene, \
+                                         new_reproduction_rate_gene, \
+                                         new_life_span_gene, \
+                                         new_consume_rate_gene, \
+                                         new_no_offspring_gene, \
+                                         new_fighting_gene,\
+                                         new_reproduction_threshold_gene, \
                                          )
                         if animal.animal_type() == 0:
                             self.__prey_birth += 1
                         if animal.animal_type() == 1:
                             self.__predator_birth += 1
 
+                animal.reproduce()
                 animal.starve()
                 animal.aged()
 
@@ -366,6 +375,31 @@ class ecosystem:
         if self.__enable_draw:
             self.draw()
             time.sleep(.5)
+
+    def species_invasion( self, number ):
+        animal_type = 1
+
+        for i in range(number):
+            x = random.randint( 0, self.__space_order )
+            y = random.randint( 0, self.__space_order )
+            self.add_animal( animal_type, \
+                             np.array([ x, y ]), \
+                             self.__initial_hunger[animal_type], \
+                             self.__animal_max_hunger[animal_type], \
+                             self.__reproduction_threshold[animal_type], \
+                             self.__reproduction_transfer[animal_type], \
+                             self.__reproduction_rate[animal_type], \
+                             self.__hunger_rate[animal_type], \
+                             self.__life_span[animal_type], \
+                             self.__animal_consume_rate[animal_type], \
+                             0, \
+                             0, \
+                             0, \
+                             0, \
+                             0, \
+                             0, \
+                             0
+                            )
 
     def animal_no( self ):
         return self.__animal_no
@@ -502,6 +536,13 @@ class ecosystem:
 
     def predator_death( self ):
         return self.__predator_death
+
+    def prey_two_gene( self ):
+        self.__prey_two_gene = []
+        for prey in self.__preys:
+            if not predator.death():
+                self.__prey_two_gene.append( ( prey.hunger_rate_gene(), prey.reproduction_rate_gene() ) )
+        return self.__prey_two_gene
 
 
     def initialize_data_array( self, iteration_number ):
