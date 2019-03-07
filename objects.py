@@ -61,15 +61,15 @@ class animal:
 
             self.__life_span_value = int( max( 1, myMath.linear( life_span_gene, 1, life_span ) ) )
 
-            self.__reproduction_rate_value = max( 1, myMath.linear( reproduction_rate_gene, .5, reproduction_rate ) )
+            self.__reproduction_rate_value = max( 1, myMath.linear( reproduction_rate_gene, .25, reproduction_rate ) )
 
             self.__consume_rate_value = max( 0.1, myMath.linear( consume_rate_gene, consume_rate, 3 ) )
 
-            self.__no_offspring_value = max( 1, int( (self.__no_offspring_gene ) ) )
+            self.__no_offspring_value = max( 1, int( (self.__no_offspring_gene/2 ) ) )
 
-            self.__fighting_value = 1. - 1./ fighting_gene**.5
+            self.__fighting_value = myMath.linear( fighting_gene, .058, 0 )
 
-            self.__reproduction_threshold_value = myMath.linear( reproduction_threshold_gene, 1., reproduction_threshold )
+            self.__reproduction_threshold_value = myMath.linear( reproduction_threshold_gene, .5, reproduction_threshold )
 
         if self.animal_type() == 1:
             self.__hunger_rate_value = max( 0.1, myMath.linear( hunger_rate_gene, 0., hunger_rate ) )
@@ -96,8 +96,6 @@ class animal:
         self.__reproduction_threshold = reproduction_threshold
 
         self.__reproduction_transfer = reproduction_transfer
-
-
 
 
 
@@ -250,14 +248,11 @@ class animal:
         nonce = random.uniform( 0, self.__reproduction_rate_value )
         if( nonce < 1 and \
             not self.age() == 0 and\
-            self.hunger() >= self.reproduction_threshold() ):
+            self.hunger() >= self.reproduction_threshold_value() ):
             return True
         return False
 
-        # if( self.age() % self.reproduction_rate() == 0 and \
-        #     not self.age() == 0 and \
-        #     self.hunger() >= self.reproduction_threshold() ):
-        #     return True
+
 
 class prey(animal):
 

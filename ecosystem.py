@@ -77,6 +77,14 @@ class ecosystem:
 
         self.__predator_no_array = np.array([])
 
+        self.__prey_gene1_array_high = np.array([])
+
+        self.__prey_gene1_array_low = np.array([])
+
+        self.__prey_gene2_array_high = np.array([])
+
+        self.__prey_gene2_array_low = np.array([])
+
         self.__frame_array = np.array([])
 
         self.__prey_birth = 0
@@ -89,7 +97,7 @@ class ecosystem:
 
         self.__predator_death = 0
 
-        self.__prey_two_gene = list()
+        self.__prey_genes_tuple = list()
 
 
 
@@ -101,8 +109,8 @@ class ecosystem:
                 animal_type = 0
                 if i % 2 == 0 and j % 2 == 0 and not i == 0 and not j == 0:
 
-                    start_gene_1 = random.uniform( 1,20 )
-                    start_gene_2 = random.uniform( 1, 10 )
+                    start_gene_1 = random.uniform( 0, 20 )
+                    start_gene_2 = random.uniform( 0, 20 )
 
                     self.add_animal( animal_type, \
                                      np.array([ i, j ]), \
@@ -222,15 +230,16 @@ class ecosystem:
                     for i in range( animal.no_offspring_value() ):
                         # Gene mutation control
                         # 1
-                        gene1_var = random.uniform( -1, 1 )
-                        gene2_var = random.uniform( -1, 1 )
+                        gene_var_rate = 2
+                        gene1_var = random.uniform( -gene_var_rate, gene_var_rate )
+                        gene2_var = random.uniform( -gene_var_rate, gene_var_rate )
                         # 2
 
                         new_hunger_rate_gene = animal.hunger_rate_gene() + gene1_var
                         if new_hunger_rate_gene > 20:
-                            new_hunger_rate_gene -= random.uniform( 1, 19 )
+                            new_hunger_rate_gene -= random.uniform( gene_var_rate, gene_var_rate+3 )
                         if new_hunger_rate_gene < 1:
-                            new_hunger_rate_gene += random.uniform( 1, 19 )
+                            new_hunger_rate_gene += random.uniform( gene_var_rate, gene_var_rate+3 )
                         new_fighting_gene = new_hunger_rate_gene
 
                         new_life_span_gene = animal.life_span_gene() + 0
@@ -238,10 +247,10 @@ class ecosystem:
 
 
                         new_reproduction_threshold_gene = animal.reproduction_threshold_gene() + gene2_var
-                        if new_reproduction_threshold_gene > 10:
-                            new_reproduction_threshold_gene -= random.uniform( 1, 9 )
+                        if new_reproduction_threshold_gene > 20:
+                            new_reproduction_threshold_gene -= random.uniform( gene_var_rate, gene_var_rate+3 )
                         if new_reproduction_threshold_gene < 1:
-                            new_reproduction_threshold_gene += random.uniform( 1, 9 )
+                            new_reproduction_threshold_gene += random.uniform( gene_var_rate, gene_var_rate+3 )
                         new_reproduction_rate_gene = new_reproduction_threshold_gene
                         new_no_offspring_gene = new_reproduction_threshold_gene
 
@@ -367,6 +376,9 @@ class ecosystem:
 
         self.__predator_no_array[self.__frame] = self.calculate_alive_animal_no()[1]
 
+        self.__prey_gene1_array_low[self.__frame], self.__prey_gene1_array_high[self.__frame] = self.calculate_animal_gene( 0, 1 )
+        self.__prey_gene2_array_low[self.__frame], self.__prey_gene2_array_high[self.__frame] = self.calculate_animal_gene( 0, 2 )
+
         self.__frame_array[self.__frame] = self.__frame
 
         self.__frame += 1
@@ -380,8 +392,8 @@ class ecosystem:
         animal_type = 1
 
         for i in range(number):
-            x = random.randint( 0, self.__space_order )
-            y = random.randint( 0, self.__space_order )
+            x = random.randint( 0, self.__space_order-1 )
+            y = random.randint( 0, self.__space_order-1 )
             self.add_animal( animal_type, \
                              np.array([ x, y ]), \
                              self.__initial_hunger[animal_type], \
@@ -406,6 +418,18 @@ class ecosystem:
 
     def animal_life_no( self ):
         return self.__animal_life_no
+
+    def prey_gene1_high( self ):
+        return self.__prey_gene1_array_high
+
+    def prey_gene1_low( self ):
+        return self.__prey_gene1_array_low
+
+    def prey_gene2_high( self ):
+        return self.__prey_gene1_array_high
+
+    def prey_gene2_low( self ):
+        return self.__prey_gene1_array_low
 
     def animal_food( self ):
         return self.__animal_food
@@ -537,12 +561,23 @@ class ecosystem:
     def predator_death( self ):
         return self.__predator_death
 
-    def prey_two_gene( self ):
-        self.__prey_two_gene = []
+    def prey_genes_tuple( self ):
+        self.__prey_genes_tuple = []
         for prey in self.__preys:
             if not predator.death():
-                self.__prey_two_gene.append( ( prey.hunger_rate_gene(), prey.reproduction_rate_gene() ) )
-        return self.__prey_two_gene
+                self.__prey_genes_tuple.append( ( prey.hunger_rate_gene(), prey.reproduction_rate_gene() ) )
+        return self.__prey_genes_tuple
+
+    def prey_gene_no( self ):
+        gene1_no = 0
+        gene2_no = 0
+        for prey in self.__preys:
+            if prey.hunger_rate_gene() < 10:
+                gene1_no +=1
+            else:
+                gene2_no +=1
+
+        return gene1_no, gene2_no
 
 
     def initialize_data_array( self, iteration_number ):
@@ -552,6 +587,12 @@ class ecosystem:
         self.__prey_no_array = np.append( self.__prey_no_array[:self.__frame], np.zeros( iteration_number ) )
         self.__predator_no_array = np.append( self.__predator_no_array[:self.__frame], np.zeros( iteration_number ) )
         self.__frame_array = np.append( self.__frame_array[:self.__frame], np.zeros( iteration_number ) )
+
+        self.__prey_gene1_array_high = np.append( self.__prey_gene1_array_high[:self.__frame], np.zeros( iteration_number ) )
+        self.__prey_gene1_array_low = np.append( self.__prey_gene1_array_low[:self.__frame], np.zeros( iteration_number ) )
+        self.__prey_gene2_array_high = np.append( self.__prey_gene1_array_high[:self.__frame], np.zeros( iteration_number ) )
+        self.__prey_gene2_array_low = np.append( self.__prey_gene1_array_low[:self.__frame], np.zeros( iteration_number ) )
+
 
     def animal_random_movement( self, animal_pos ):
         '''
@@ -615,6 +656,27 @@ class ecosystem:
                 self.__animal_life_no[animal.animal_type()] += 1
 
         return self.__animal_life_no
+
+    def calculate_animal_gene( self, animaltype, genetype ):
+        '''
+        calculate animal gene number
+        genetype = 1: hunger rate
+        genetype = 2: reproduction rate
+        ( low_no, high_no )
+        '''
+        return_gene = np.array( [ 0, 0 ] )
+        for animal in self.__animals:
+            if animal.animal_type() == animaltype:
+                if genetype == 1:
+                    if animal.hunger_rate_gene() > 10:
+                        return_gene[1] += 1
+                    else: return_gene[0] += 1
+                if genetype == 2:
+                    if animal.reproduction_rate_gene() > 10:
+                        return_gene[1] += 1
+                    else: return_gene[0] += 1
+        return return_gene
+
 
 
     def draw( self, ):
